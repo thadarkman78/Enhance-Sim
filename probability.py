@@ -158,6 +158,8 @@ def simulate_attempt(new_fail_counters: list, num_stars: int, cata_choice: list,
             prob = base_prob + 0.07
         elif final_stage_boost == 1:
             prob = base_prob + 0.03
+        else:
+            prob = base_prob
         if np.random.rand() < prob:
             
             return {
