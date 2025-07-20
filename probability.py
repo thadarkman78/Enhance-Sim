@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 
 # Simulation parameters
-NUM_SIMULATIONS = 10
+NUM_SIMULATIONS = 1
 
 def reset_fail_counters(fail_counters: list, num_stars: int):
     for i in range(num_stars):
@@ -192,30 +192,30 @@ print(f"Average final stage fails before success: {avg_fails:.2f}")
 attempts_array = np.array(attempts_list)
 
 # Histogram
-plt.figure(figsize=(12, 7))
-counts, bins, patches = plt.hist(
-    attempts_array,
-    bins=range(min(attempts_list), max(attempts_list)+2),  # dynamic bins
-    color='skyblue',
-    edgecolor='black',
-    density=True
-)
+# plt.figure(figsize=(12, 7))
+# counts, bins, patches = plt.hist(
+#     attempts_array,
+#     bins=range(min(attempts_list), max(attempts_list)+2),  # dynamic bins
+#     color='skyblue',
+#     edgecolor='black',
+#     density=True
+# )
 
-# Mean line
-mean_attempts = np.mean(attempts_array)
-plt.axvline(mean_attempts, color='green', linestyle='-', linewidth=2, label=f"Mean: {mean_attempts:.2f}")
+# # Mean line
+# mean_attempts = np.mean(attempts_array)
+# plt.axvline(mean_attempts, color='green', linestyle='-', linewidth=2, label=f"Mean: {mean_attempts:.2f}")
 
-# Quartiles
-q1, q2, q3 = np.percentile(attempts_array, [25, 50, 75])
-for q, label in zip([q1, q2, q3], ["Q1", "Q2 (Median)", "Q3"]):
-    plt.axvline(q, color='red', linestyle='--', alpha=0.6)
-    plt.text(q, plt.ylim()[1]*0.9, f'{label}\n{q:.0f}', color='red', ha='center')
+# # Quartiles
+# q1, q2, q3 = np.percentile(attempts_array, [25, 50, 75])
+# for q, label in zip([q1, q2, q3], ["Q1", "Q2 (Median)", "Q3"]):
+#     plt.axvline(q, color='red', linestyle='--', alpha=0.6)
+#     plt.text(q, plt.ylim()[1]*0.9, f'{label}\n{q:.0f}', color='red', ha='center')
 
-# Labels & Layout
-plt.title(f"Distribution of Total Attempts\nAverage: {mean_attempts:.2f} over {NUM_SIMULATIONS:,} simulations")
-plt.xlabel("Total Attempts to Complete All Stages")
-plt.ylabel("Probability Density")
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
+# # Labels & Layout
+# plt.title(f"Distribution of Total Attempts\nAverage: {mean_attempts:.2f} over {NUM_SIMULATIONS:,} simulations")
+# plt.xlabel("Total Attempts to Complete All Stages")
+# plt.ylabel("Probability Density")
+# plt.legend()
+# plt.grid(True, alpha=0.3)
+# plt.tight_layout()
+# plt.show()
