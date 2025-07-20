@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 
 # Simulation parameters
-NUM_SIMULATIONS = 10000
+NUM_SIMULATIONS = 100000
 
 def reset_fail_counters(fail_counters: list, num_stars: int):
     for i in range(num_stars):
@@ -111,7 +111,7 @@ def seed_final_stage_probs():
             base_probs = [0.02, 0.04, 0.08, 0.12, 0.25, 0.50, 1.0]
             num_stars = 6
 
-    return [p + 0.07 for p in base_probs], num_stars
+    return base_probs, num_stars
 
 def simulate_attempt(new_fail_counters: list, num_stars: int, cata_choice: list, final_stage_probs: list, new_boost_counters: list, final_stage_boost: int):
     total_attempts = 0
