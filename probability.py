@@ -1,22 +1,31 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import normaltest
 
 #TODO ADDS: 
 """
     
-    Adding in standard deviation
-    
-    Implementing a cost analyzer. It must track how many boosts were used and at what stage.
-    It must get user input on cost values of raw materials and gold (can be separate items)
-    
-    it would then have to iterate through a normal runthrough without boosts (potent on last hit is constant imo)
-    to see what the difference would have been, then calculate raw costs saved.
+    Cost Analyzer:
+    We already track boosts per stage so that's good.
+    It must get user input on cost values of raw materials and gold (can be separate items) (that'll not be in the sim so easy implement)
+    We can do backwards tracking, IE: if you use Potent on star 4 of 5, use the same RNG seed to determine what would ahve happened if you
+    didn't boost. If you would have failed, then you backwards calculate the attempts saved using an average probability per stage compounded:
+    (EG: stage 3 has a 1/5 chance of hitting because you used no boost, so 5 attempts on average, then lower if pity before that. You compound
+    that for stage 2 and stage 1.)
+
+    All of that above represents the formula, but to actually analyze, we need all situations tracked. EG: no boost, cata, potent on star 3, repeat
+    for each star. To do this simply, we can just run 1 simulation per level with the highest boost per star (EG: potent or amp) and then backwards
+    calculate attempts saved, and then switch over to the other boost scenarios, then hard store the data.
+
+    avg cost of failsafe
+
+
 """
 
 
 
 # Simulation parameters
-NUM_SIMULATIONS = 100000
+NUM_SIMULATIONS = 1000000
 
 def reset_fail_counters(fail_counters: list, num_stars: int):
     for i in range(num_stars):
@@ -125,7 +134,6 @@ def simulate_attempt(new_fail_counters: list, num_stars: int, cata_choice: list,
             for i in range(num_stars):
                 total_attempts += 1
                 if fail_counters[i] >= 6:
-                    # print(f"pity stage {i+1} {boost_use_tracker[i]}")
                     prob = 1.0
                 elif cata_choice[i] == 3:
                     prob = 1.0
@@ -133,26 +141,21 @@ def simulate_attempt(new_fail_counters: list, num_stars: int, cata_choice: list,
                 elif cata_choice[i] == 1:
                     prob = 0.24
                     boost_use_tracker[i]+= 1
-                    # print(f"used a boost, num used for stage {i+1}: {boost_use_tracker[i]}")
                 elif cata_choice[i] == 2:
                     prob = 0.27
                     boost_use_tracker[i]+= 1
-                    # print(boost_use_tracker[i])
                 else:
                     prob = 0.2
 
                 if np.random.rand() < prob:
-                    # print(f"stage {i+1} pass attempt {total_attempts} ")
                     fail_counters[i] = 0
                 else:
-                    # print(f"stage {i+1} fail attempt {total_attempts} ")
                     fail_counters[i] += 1
                     break
             else:
                 break
 
         total_attempts += 1
-        # print("---------")
         base_prob = final_stage_probs[min(final_stage_fail_count, len(final_stage_probs) - 1)]
         if final_stage_boost == 2:
             prob = base_prob + 0.07
@@ -176,19 +179,19 @@ def simulate_attempt(new_fail_counters: list, num_stars: int, cata_choice: list,
 final_stage_probs, num_stars = seed_final_stage_probs()
 fail_counters = create_new_fail_counters([], num_stars)
 cata_option, boost_option, final_stage_boost_choice = populate_boost_choice([], num_stars, [])
-# print(cata_option)
+
 
 results = [
     simulate_attempt(fail_counters, num_stars, cata_option, final_stage_probs, [0] * num_stars, final_stage_boost_choice)
     for _ in range(NUM_SIMULATIONS)
 ]
-# print(results)
-# Extract metrics
+
+
 
 attempts_list = [res["total_attempts"] for res in results]
 final_fails_list = [res["final_stage_fail_count"] for res in results]
 boost_uses_list = [res["boost_uses"] for res in results]
-# Averages
+
 avg_attempts = np.mean(attempts_list)
 avg_fails = np.mean(final_fails_list)
 boost_array = np.array(boost_uses_list)
@@ -196,8 +199,6 @@ avg_boosts_per_stage = np.mean(boost_array, axis=0)
 
 
 
-
-# Print results
 print(f"\nSimulations: {NUM_SIMULATIONS:,}")
 print(f"Average total attempts to complete all {num_stars+1} stages: {avg_attempts:.2f}")
 print(f"Average final stage fails before success: {avg_fails:.2f}")
@@ -226,34 +227,67 @@ print(f"\nFinal stage average boost uses: {avg_final_boosts:.2f} ({boost_labels[
 
 
 
+
+
 # Convert attempt list to NumPy array for analysis
 attempts_array = np.array(attempts_list)
 
-# Histogram
-# plt.figure(figsize=(12, 7))
-# counts, bins, patches = plt.hist(
-#     attempts_array,
-#     bins=range(min(attempts_list), max(attempts_list)+2),  # dynamic bins
-#     color='skyblue',
-#     edgecolor='black',
-#     density=True
-# )
+# Statistics
+mean_attempts = np.mean(attempts_array)
+std_attempts = np.std(attempts_array)
+q1, q2, q3 = np.percentile(attempts_array, [25, 50, 75])
 
-# # Mean line
-# mean_attempts = np.mean(attempts_array)
-# plt.axvline(mean_attempts, color='green', linestyle='-', linewidth=2, label=f"Mean: {mean_attempts:.2f}")
+# Perform normality test
 
-# # Quartiles
-# q1, q2, q3 = np.percentile(attempts_array, [25, 50, 75])
-# for q, label in zip([q1, q2, q3], ["Q1", "Q2 (Median)", "Q3"]):
-#     plt.axvline(q, color='red', linestyle='--', alpha=0.6)
-#     plt.text(q, plt.ylim()[1]*0.9, f'{label}\n{q:.0f}', color='red', ha='center')
+stat, p_value = normaltest(attempts_array)
+print(f"Normality test p-value: {p_value:.5g}")
 
-# # Labels & Layout
-# plt.title(f"Distribution of Total Attempts\nAverage: {mean_attempts:.2f} over {NUM_SIMULATIONS:,} simulations")
-# plt.xlabel("Total Attempts to Complete All Stages")
-# plt.ylabel("Probability Density")
-# plt.legend()
-# plt.grid(True, alpha=0.3)
-# plt.tight_layout()
-# plt.show()
+
+# Plot
+plt.figure(figsize=(12, 7))
+counts, bins, patches = plt.hist(
+    attempts_array,
+    bins=range(min(attempts_list), max(attempts_list) + 2),
+    color='skyblue',
+    edgecolor='black',
+    density=True
+)
+
+from scipy.stats import lognorm
+
+# Fit log-normal parameters (shape, loc, scale)
+shape, loc, scale = lognorm.fit(attempts_array, floc=0)
+
+# Generate x range for PDF curve
+x_vals = np.linspace(min(attempts_array), max(attempts_array), 1000)
+pdf_vals = lognorm.pdf(x_vals, shape, loc=loc, scale=scale)
+
+# Normalize PDF to match histogram density
+plt.plot(x_vals, pdf_vals, 'orange', label='Log-Normal Fit', linewidth=2)
+
+
+# Mean line
+plt.axvline(mean_attempts, color='green', linestyle='-', linewidth=2, label=f"Mean: {mean_attempts:.2f}")
+
+# Standard deviation line
+plt.axvline(mean_attempts + std_attempts, color='purple', linestyle='--', linewidth=2, label=f"+1 Std Dev: {mean_attempts + std_attempts:.2f}")
+plt.axvline(mean_attempts - std_attempts, color='purple', linestyle='--', linewidth=2, label=f"-1 Std Dev: {mean_attempts - std_attempts:.2f}")
+
+# Quartiles
+for q, label in zip([q1, q2, q3], ["Q1", "Q2 (Median)", "Q3"]):
+    plt.axvline(q, color='red', linestyle='--', alpha=0.6)
+    plt.text(q, plt.ylim()[1]*0.9, f'{label}\n{q:.0f}', color='red', ha='center')
+
+# Text box for p-value
+plt.text(0.98, 0.95, f'Shapiro p-value: {p_value:.4f}', transform=plt.gca().transAxes,
+         fontsize=10, verticalalignment='top', horizontalalignment='right',
+         bbox=dict(facecolor='white', alpha=0.6))
+
+# Labels & Layout
+plt.title(f"Distribution of Total Attempts\nMean: {mean_attempts:.2f}, Std Dev: {std_attempts:.2f} over {NUM_SIMULATIONS:,} simulations")
+plt.xlabel("Total Attempts to Complete All Stages")
+plt.ylabel("Probability Density")
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
